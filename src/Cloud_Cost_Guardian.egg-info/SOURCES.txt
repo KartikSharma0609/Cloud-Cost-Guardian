@@ -1,8 +1,0 @@
-pyproject.toml
-src/Cloud_Cost_Guardian.egg-info/PKG-INFO
-src/Cloud_Cost_Guardian.egg-info/SOURCES.txt
-src/Cloud_Cost_Guardian.egg-info/dependency_links.txt
-src/Cloud_Cost_Guardian.egg-info/requires.txt
-src/Cloud_Cost_Guardian.egg-info/top_level.txt
-src/guardian/__init__.py
-src/guardian/scanners/__init__.py
