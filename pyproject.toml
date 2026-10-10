@@ -1,0 +1,16 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "Cloud-Cost-Guardian"
+version = "0.1.0"
+description = "Find and safely clean up wasted AWS resources"
+requires-python = ">=3.12"
+dependencies = ["boto3"]
+
+[project.optional-dependencies]
+dev = ["pytest", "moto[ec2]", "ruff", "black"]
+
+[tool.setuptools.packages.find]
+where = ["src"]

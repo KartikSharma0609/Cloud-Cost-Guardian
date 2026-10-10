@@ -1,0 +1,7 @@
+boto3
+
+[dev]
+pytest
+moto[ec2]
+ruff
+black
