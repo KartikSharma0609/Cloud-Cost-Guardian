@@ -2,7 +2,7 @@ from guardian.models import Finding
 from guardian.registry import register
 
 
-@register("ebs_volume", service="ec2")
+@register("ebs_volume", service="ec2", billing_services=("EC2 - Other",))
 def scan_unattached_volumes(ec2_client, region: str, prices) -> list[Finding]:
     """Return EBS volumes that are not attached to any instance."""
     findings = []

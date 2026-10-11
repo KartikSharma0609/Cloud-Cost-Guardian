@@ -31,3 +31,36 @@ class FakePricing:
         if self.error:
             raise self.error
         return {"PriceList": self.price_list}
+
+
+def make_ce_page(spend, next_token=None):
+    """Build a fake Cost Explorer response page: {service: "amount"}."""
+    page = {
+        "ResultsByTime": [
+            {
+                "TimePeriod": {"Start": "2026-09-11", "End": "2026-10-11"},
+                "Groups": [
+                    {
+                        "Keys": [service],
+                        "Metrics": {"UnblendedCost": {"Amount": amount, "Unit": "USD"}},
+                    }
+                    for service, amount in spend.items()
+                ],
+            }
+        ]
+    }
+    if next_token:
+        page["NextPageToken"] = next_token
+    return page
+
+
+class FakeCostExplorer:
+    """Stands in for the boto3 ce client. Returns the given pages in order."""
+
+    def __init__(self, pages):
+        self.pages = pages
+        self.requests = []  # every request we received, for assertions
+
+    def get_cost_and_usage(self, **kwargs):
+        self.requests.append(kwargs)
+        return self.pages[len(self.requests) - 1]

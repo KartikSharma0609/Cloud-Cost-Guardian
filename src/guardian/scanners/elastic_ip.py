@@ -4,7 +4,11 @@ from guardian.registry import register
 HOURS_PER_MONTH = 730
 
 
-@register("elastic_ip", service="ec2")
+@register(
+    "elastic_ip",
+    service="ec2",
+    billing_services=("Amazon Virtual Private Cloud",),
+)
 def scan_unassociated_addresses(ec2_client, region: str, prices) -> list[Finding]:
     """Return Elastic IPs that are not associated with anything."""
     findings = []
