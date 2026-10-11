@@ -2,6 +2,8 @@ import json
 import logging
 from dataclasses import dataclass
 
+from botocore.exceptions import BotoCoreError, ClientError
+
 logger = logging.getLogger(__name__)
 
 
@@ -20,6 +22,10 @@ DEFAULTS = {
     "public_ipv4_hour": 0.005,
 }
 
+# What a pricing failure looks like: AWS/network errors, or a response shape we
+# don't understand. Anything else is a bug and should surface, not be hidden.
+PRICING_ERRORS = (BotoCoreError, ClientError, KeyError, TypeError, ValueError)
+
 
 class PriceProvider:
     """Looks up AWS prices once per run and falls back to defaults on any problem."""
@@ -35,7 +41,7 @@ class PriceProvider:
         return self._cache[key]
 
     def public_ipv4_hour(self, region: str) -> Price:
-        # Live lookup comes once we've verified the right filters (see Step 8e).
+        # Live lookup comes once we have verified the right filters.
         return Price(DEFAULTS["public_ipv4_hour"], "estimated")
 
     def _lookup_ebs(self, volume_type: str, region: str) -> Price:
@@ -51,7 +57,7 @@ class PriceProvider:
                     unit="GB-Mo",
                 )
                 return Price(usd, "live")
-            except Exception as exc:
+            except PRICING_ERRORS as exc:
                 logger.warning("Live EBS price lookup failed (%s); using default", exc)
         return Price(DEFAULTS["ebs_gb_month"], "estimated")
 

@@ -24,7 +24,9 @@ def scan_all(session, region: str, prices=None) -> ScanResult:
         try:
             client = session.client(spec.service, region_name=region)
             result.findings.extend(spec.func(client, region, prices))
-        except Exception as exc:  # report it, keep scanning
+        except Exception as exc:  # noqa: BLE001
+            # Deliberately broad: any scanner may fail in any way (permissions,
+            # throttling, bugs). We record it in the report and keep scanning.
             result.errors[name] = f"{type(exc).__name__}: {exc}"
 
     return result
