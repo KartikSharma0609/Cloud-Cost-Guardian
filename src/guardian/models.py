@@ -10,4 +10,5 @@ class Finding:
     region: str
     reason: str
     estimated_monthly_cost_usd: float
+    price_source: str = "estimated"
     details: dict = field(default_factory=dict)

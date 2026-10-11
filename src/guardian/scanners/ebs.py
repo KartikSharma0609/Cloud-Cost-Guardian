@@ -1,10 +1,9 @@
 from guardian.models import Finding
-
-# Approximate gp3 price in ap-south-1. We'll make this configurable later.
-USD_PER_GB_MONTH = 0.0912
+from guardian.registry import register
 
 
-def scan_unattached_volumes(ec2_client, region: str) -> list[Finding]:
+@register("ebs_volume", service="ec2")
+def scan_unattached_volumes(ec2_client, region: str, prices) -> list[Finding]:
     """Return EBS volumes that are not attached to any instance."""
     findings = []
     paginator = ec2_client.get_paginator("describe_volumes")
@@ -14,15 +13,19 @@ def scan_unattached_volumes(ec2_client, region: str) -> list[Finding]:
     ):
         for volume in page["Volumes"]:
             size_gb = volume["Size"]
+            volume_type = volume["VolumeType"]
+            price = prices.ebs_gb_month(volume_type, region)
             findings.append(
                 Finding(
                     resource_type="ebs_volume",
                     resource_id=volume["VolumeId"],
                     region=region,
                     reason="Volume is not attached to any instance",
-                    estimated_monthly_cost_usd=round(size_gb * USD_PER_GB_MONTH, 2),
+                    estimated_monthly_cost_usd=round(size_gb * price.usd, 2),
+                    price_source=price.source,
                     details={
                         "size_gb": size_gb,
+                        "volume_type": volume_type,
                         "created": volume["CreateTime"].isoformat(),
                     },
                 )
