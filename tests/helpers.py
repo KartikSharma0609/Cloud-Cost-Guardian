@@ -1,4 +1,7 @@
 import json
+from datetime import UTC, datetime, timedelta
+
+from botocore.exceptions import ClientError
 
 
 def make_product(usd, unit="GB-Mo"):
@@ -64,3 +67,56 @@ class FakeCostExplorer:
     def get_cost_and_usage(self, **kwargs):
         self.requests.append(kwargs)
         return self.pages[len(self.requests) - 1]
+
+
+GB = 1024**3
+
+
+def make_images(sizes_oldest_first):
+    """Fake ECR imageDetails, pushed one hour apart, oldest first."""
+    start = datetime(2026, 9, 1, tzinfo=UTC)
+    return [
+        {"imageSizeInBytes": size, "imagePushedAt": start + timedelta(hours=i)}
+        for i, size in enumerate(sizes_oldest_first)
+    ]
+
+
+class FakePaginator:
+    def __init__(self, fn):
+        self._fn = fn
+
+    def paginate(self, **kwargs):
+        return iter(self._fn(**kwargs))
+
+
+class FakeEcr:
+    """Stands in for the boto3 ecr client, with exact image sizes and dates.
+
+    repos: {repository_name: [imageDetails]}   policies: names that have a policy
+    """
+
+    def __init__(self, repos, policies=(), lifecycle_error=None):
+        self.repos = repos
+        self.policies = set(policies)
+        self.lifecycle_error = lifecycle_error
+
+    def get_paginator(self, operation):
+        if operation == "describe_repositories":
+            return FakePaginator(
+                lambda: [{"repositories": [{"repositoryName": n} for n in self.repos]}]
+            )
+        if operation == "describe_images":
+            return FakePaginator(
+                lambda repositoryName: [{"imageDetails": self.repos[repositoryName]}]
+            )
+        raise NotImplementedError(operation)
+
+    def get_lifecycle_policy(self, repositoryName):
+        if self.lifecycle_error:
+            raise self.lifecycle_error
+        if repositoryName in self.policies:
+            return {"lifecyclePolicyText": "{}"}
+        raise ClientError(
+            {"Error": {"Code": "LifecyclePolicyNotFoundException", "Message": "none"}},
+            "GetLifecyclePolicy",
+        )

@@ -70,3 +70,10 @@ def test_no_client_uses_defaults_only():
     price = PriceProvider().ebs_gb_month("gp3", "ap-south-1")
 
     assert price.source == "estimated"
+
+
+def test_ecr_price_is_always_labelled_estimated():
+    price = PriceProvider(FakePricing([make_product("0.1")])).ecr_gb_month("ap-south-1")
+
+    assert price.usd == DEFAULTS["ecr_gb_month"]
+    assert price.source == "estimated"

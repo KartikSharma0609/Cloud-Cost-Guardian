@@ -61,3 +61,9 @@ def test_report_marks_services_with_and_without_scanners():
     assert scanners["Amazon Elastic Compute Cloud - Compute"] == ()
     assert scanners["Amazon Virtual Private Cloud"] == ("elastic_ip",)
     assert scanners["EC2 - Other"] == ("ebs_volume",)
+
+
+def test_ecr_service_is_covered_by_the_ecr_scanner():
+    report = build_spend_report({"Amazon EC2 Container Registry (ECR)": 0.09})
+
+    assert report[0].scanners == ("ecr_lifecycle",)

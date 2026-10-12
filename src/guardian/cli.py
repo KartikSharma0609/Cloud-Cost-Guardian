@@ -21,12 +21,16 @@ def print_spend_report(session) -> None:
 
     print("\nGross usage, last 30 days (credits and tax excluded):", file=sys.stderr)
     for row in rows:
-        covered = ", ".join(row.scanners) if row.scanners else "no scanner yet"
-        print(f"  {row.service:45} ${row.usd:>8.2f}  {covered}", file=sys.stderr)
+        checks = (
+            f"checks: {', '.join(row.scanners)}" if row.scanners else "no scanner yet"
+        )
+        print(f"  {row.service:45} ${row.usd:>8.2f}  {checks}", file=sys.stderr)
 
     unscanned = sum(row.usd for row in rows if not row.scanners)
     print(
-        f"\n${unscanned:.2f} of usage is in services with no scanner yet.",
+        f"\n${unscanned:.2f} of usage is in services with no scanner yet.\n"
+        "A scanner checks one waste pattern in a service; it does not explain "
+        "all spending there.",
         file=sys.stderr,
     )
 

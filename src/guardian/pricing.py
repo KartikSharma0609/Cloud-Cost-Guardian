@@ -20,6 +20,8 @@ class Price:
 DEFAULTS = {
     "ebs_gb_month": 0.0912,
     "public_ipv4_hour": 0.005,
+    # Not yet verified against the Price List API, so it is always labelled "estimated".
+    "ecr_gb_month": 0.10,
 }
 
 # What a pricing failure looks like: AWS/network errors, or a response shape we
@@ -39,6 +41,10 @@ class PriceProvider:
         if key not in self._cache:
             self._cache[key] = self._lookup_ebs(volume_type, region)
         return self._cache[key]
+
+    def ecr_gb_month(self, region: str) -> Price:
+        # Live lookup comes once we have verified the right filters.
+        return Price(DEFAULTS["ecr_gb_month"], "estimated")
 
     def public_ipv4_hour(self, region: str) -> Price:
         # Live lookup comes once we have verified the right filters.
