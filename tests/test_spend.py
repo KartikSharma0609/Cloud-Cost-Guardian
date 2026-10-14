@@ -58,7 +58,7 @@ def test_report_marks_services_with_and_without_scanners():
         "EC2 - Other",
     ]
     scanners = {row.service: row.scanners for row in report}
-    assert scanners["Amazon Elastic Compute Cloud - Compute"] == ()
+    assert scanners["Amazon Elastic Compute Cloud - Compute"] == ("ec2_idle",)
     assert scanners["Amazon Virtual Private Cloud"] == ("elastic_ip",)
     assert scanners["EC2 - Other"] == ("ebs_volume",)
 

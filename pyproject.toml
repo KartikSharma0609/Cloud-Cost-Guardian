@@ -10,7 +10,7 @@ requires-python = ">=3.12"
 dependencies = ["boto3"]
 
 [project.optional-dependencies]
-dev = ["pytest", "moto[ec2,ecr]", "ruff", "black"]
+dev = ["pytest", "moto[ec2,ecr,sns,sqs]", "ruff", "black"]
 
 [tool.setuptools.packages.find]
 where = ["src"]

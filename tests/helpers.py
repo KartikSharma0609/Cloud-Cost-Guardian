@@ -28,9 +28,11 @@ class FakePricing:
         self.price_list = price_list or []
         self.error = error
         self.calls = 0
+        self.requests = []  # every request received, for assertions
 
     def get_products(self, **kwargs):
         self.calls += 1
+        self.requests.append(kwargs)
         if self.error:
             raise self.error
         return {"PriceList": self.price_list}
@@ -120,3 +122,31 @@ class FakeEcr:
             {"Error": {"Code": "LifecyclePolicyNotFoundException", "Message": "none"}},
             "GetLifecyclePolicy",
         )
+
+
+def make_cpu_points(maxima, averages=None):
+    """Fake daily CloudWatch CPU datapoints, oldest first."""
+    start = datetime(2026, 9, 28, tzinfo=UTC)
+    averages = averages or [1.0] * len(maxima)
+    return [
+        {
+            "Timestamp": start + timedelta(days=i),
+            "Maximum": maximum,
+            "Average": average,
+            "Unit": "Percent",
+        }
+        for i, (maximum, average) in enumerate(zip(maxima, averages, strict=True))
+    ]
+
+
+class FakeCloudWatch:
+    """Stands in for the boto3 cloudwatch client. Returns the same points for any
+    instance, and records every request for assertions."""
+
+    def __init__(self, points=()):
+        self.points = list(points)
+        self.requests = []
+
+    def get_metric_statistics(self, **kwargs):
+        self.requests.append(kwargs)
+        return {"Datapoints": self.points}

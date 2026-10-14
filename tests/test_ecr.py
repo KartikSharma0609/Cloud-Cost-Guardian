@@ -41,6 +41,7 @@ def test_only_images_older_than_the_newest_are_counted():
     finding = findings[0]
     assert finding.resource_type == "ecr_repository"
     assert finding.resource_id == "app"
+    assert finding.kind == "review"  # which old images matter is a human call
     assert finding.details["image_count"] == 13
     assert finding.details["reclaimable_gb"] == 3.0
     assert finding.estimated_monthly_cost_usd == 0.3

@@ -1,6 +1,6 @@
 from botocore.exceptions import ClientError
 
-from guardian.models import Finding
+from guardian.models import KIND_REVIEW, Finding
 from guardian.registry import register
 
 # Newest images we assume are worth keeping (current deploy plus rollbacks).
@@ -59,6 +59,7 @@ def scan_repositories_without_lifecycle(
                     ),
                     estimated_monthly_cost_usd=round(reclaimable_gb * price.usd, 2),
                     price_source=price.source,
+                    kind=KIND_REVIEW,  # which old images matter is a human call
                     details={
                         "image_count": len(images),
                         "keep_latest": KEEP_LATEST,

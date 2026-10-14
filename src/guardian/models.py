@@ -1,5 +1,10 @@
 from dataclasses import dataclass, field
 
+# "waste":  provably unused by definition (an orphaned volume, an unattached IP).
+# "review": looks suspicious but needs a human's judgment (an idle-looking server).
+KIND_WASTE = "waste"
+KIND_REVIEW = "review"
+
 
 @dataclass(frozen=True)
 class Finding:
@@ -10,5 +15,6 @@ class Finding:
     region: str
     reason: str
     estimated_monthly_cost_usd: float
-    price_source: str = "estimated"
+    price_source: str = "estimated"  # "live", "estimated", or "unknown"
+    kind: str = KIND_WASTE
     details: dict = field(default_factory=dict)

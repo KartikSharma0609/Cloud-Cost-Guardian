@@ -26,6 +26,7 @@ def test_finds_unassociated_address():
     assert findings[0].details["public_ip"] == address["PublicIp"]
     assert findings[0].estimated_monthly_cost_usd == 3.65
     assert findings[0].price_source == "estimated"
+    assert findings[0].kind == "waste"
 
 
 @mock_aws

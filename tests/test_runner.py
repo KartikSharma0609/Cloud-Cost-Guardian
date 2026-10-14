@@ -34,3 +34,32 @@ def test_one_failing_scanner_does_not_stop_the_others(monkeypatch):
 
     assert "broken" in result.errors
     assert any(f.resource_type == "elastic_ip" for f in result.findings)
+
+
+def test_extra_services_are_passed_as_keyword_clients(monkeypatch):
+    seen = {}
+
+    def needs_cloudwatch(client, region, prices, *, cloudwatch):
+        seen["cloudwatch_client"] = hasattr(cloudwatch, "get_metric_statistics")
+        return []
+
+    spec = ScannerSpec(
+        "needs_cw", "ec2", needs_cloudwatch, extra_services=("cloudwatch",)
+    )
+    monkeypatch.setitem(SCANNERS, "needs_cw", spec)
+
+    with mock_aws():
+        session = boto3.Session(region_name=REGION)
+        result = scan_all(session, REGION, prices=PriceProvider())
+
+    assert seen == {"cloudwatch_client": True}
+    assert "needs_cw" not in result.errors
+
+
+def test_the_ec2_scanner_is_registered_with_its_cloudwatch_dependency():
+    import guardian.scanners  # noqa: F401
+
+    spec = SCANNERS["ec2_idle"]
+
+    assert spec.extra_services == ("cloudwatch",)
+    assert spec.billing_services == ("Amazon Elastic Compute Cloud - Compute",)

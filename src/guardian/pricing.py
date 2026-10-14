@@ -10,9 +10,8 @@ logger = logging.getLogger(__name__)
 @dataclass(frozen=True)
 class Price:
     usd: float
-    source: (
-        str  # "live" (from the AWS Price List API) or "estimated" (built-in default)
-    )
+    # "live" (from the AWS Price List API) or "estimated" (a built-in default)
+    source: str
 
 
 # Fallbacks, used only when the Price List API is unavailable.
@@ -34,12 +33,23 @@ class PriceProvider:
 
     def __init__(self, pricing_client=None):
         self._client = pricing_client  # None means "use defaults only"
-        self._cache: dict[tuple, Price] = {}
+        self._cache: dict[tuple, Price | None] = {}
 
     def ebs_gb_month(self, volume_type: str, region: str) -> Price:
         key = ("ebs", volume_type, region)
         if key not in self._cache:
             self._cache[key] = self._lookup_ebs(volume_type, region)
+        return self._cache[key]
+
+    def ec2_instance_hour(self, instance_type: str, region: str) -> Price | None:
+        """Live on-demand price for shared-tenancy Linux, or None.
+
+        There is no safe default for an arbitrary instance type, so we never guess:
+        None means "unknown" and the finding says so.
+        """
+        key = ("ec2", instance_type, region)
+        if key not in self._cache:
+            self._cache[key] = self._lookup_ec2(instance_type, region)
         return self._cache[key]
 
     def ecr_gb_month(self, region: str) -> Price:
@@ -66,6 +76,27 @@ class PriceProvider:
             except PRICING_ERRORS as exc:
                 logger.warning("Live EBS price lookup failed (%s); using default", exc)
         return Price(DEFAULTS["ebs_gb_month"], "estimated")
+
+    def _lookup_ec2(self, instance_type: str, region: str) -> Price | None:
+        if self._client is None:
+            return None
+        try:
+            usd = self._single_price(
+                "AmazonEC2",
+                [
+                    ("regionCode", region),
+                    ("instanceType", instance_type),
+                    ("operatingSystem", "Linux"),
+                    ("tenancy", "Shared"),
+                    ("preInstalledSw", "NA"),
+                    ("capacitystatus", "Used"),
+                ],
+                unit="Hrs",
+            )
+            return Price(usd, "live")
+        except PRICING_ERRORS as exc:
+            logger.warning("Live EC2 price lookup failed (%s); cost unknown", exc)
+            return None
 
     def _single_price(self, service_code, filters, unit) -> float:
         response = self._client.get_products(

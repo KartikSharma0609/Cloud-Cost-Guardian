@@ -27,6 +27,7 @@ def test_finds_unattached_volume():
     assert len(findings) == 1
     assert findings[0].resource_id == volume["VolumeId"]
     assert findings[0].resource_type == "ebs_volume"
+    assert findings[0].kind == "waste"
     assert findings[0].details["size_gb"] == 10
     assert findings[0].details["volume_type"] == "gp3"
     assert findings[0].estimated_monthly_cost_usd == 0.91

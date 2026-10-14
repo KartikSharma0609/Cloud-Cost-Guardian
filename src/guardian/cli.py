@@ -6,6 +6,7 @@ from dataclasses import asdict
 import boto3
 from botocore.exceptions import BotoCoreError, ClientError
 
+from guardian.report import format_spend_section, summarize
 from guardian.runner import scan_all
 from guardian.spend import build_spend_report, fetch_spend_by_service
 
@@ -19,20 +20,7 @@ def print_spend_report(session) -> None:
         print(f"Could not read spend from Cost Explorer: {exc}", file=sys.stderr)
         return
 
-    print("\nGross usage, last 30 days (credits and tax excluded):", file=sys.stderr)
-    for row in rows:
-        checks = (
-            f"checks: {', '.join(row.scanners)}" if row.scanners else "no scanner yet"
-        )
-        print(f"  {row.service:45} ${row.usd:>8.2f}  {checks}", file=sys.stderr)
-
-    unscanned = sum(row.usd for row in rows if not row.scanners)
-    print(
-        f"\n${unscanned:.2f} of usage is in services with no scanner yet.\n"
-        "A scanner checks one waste pattern in a service; it does not explain "
-        "all spending there.",
-        file=sys.stderr,
-    )
+    print("\n" + format_spend_section(rows), file=sys.stderr)
 
 
 def main() -> None:
@@ -50,11 +38,7 @@ def main() -> None:
 
     print(json.dumps([asdict(f) for f in result.findings], indent=2))
 
-    total = sum(f.estimated_monthly_cost_usd for f in result.findings)
-    print(
-        f"\n{len(result.findings)} finding(s), ~${total:.2f}/month wasted",
-        file=sys.stderr,
-    )
+    print(f"\n{summarize(result.findings)}", file=sys.stderr)
     for name, error in result.errors.items():
         print(f"Scanner '{name}' failed: {error}", file=sys.stderr)
 

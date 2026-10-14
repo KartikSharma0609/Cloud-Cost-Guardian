@@ -77,3 +77,51 @@ def test_ecr_price_is_always_labelled_estimated():
 
     assert price.usd == DEFAULTS["ecr_gb_month"]
     assert price.source == "estimated"
+
+
+def test_ec2_price_is_live_with_exactly_one_match():
+    provider = PriceProvider(FakePricing([make_product("0.0112000000", unit="Hrs")]))
+
+    price = provider.ec2_instance_hour("t3.micro", "ap-south-1")
+
+    assert price.usd == 0.0112
+    assert price.source == "live"
+
+
+def test_ec2_price_asks_for_shared_tenancy_linux_of_that_exact_type():
+    fake = FakePricing([make_product("0.0112", unit="Hrs")])
+
+    PriceProvider(fake).ec2_instance_hour("t3.micro", "ap-south-1")
+
+    filters = {f["Field"]: f["Value"] for f in fake.requests[0]["Filters"]}
+    assert filters == {
+        "regionCode": "ap-south-1",
+        "instanceType": "t3.micro",
+        "operatingSystem": "Linux",
+        "tenancy": "Shared",
+        "preInstalledSw": "NA",
+        "capacitystatus": "Used",
+    }
+
+
+def test_ec2_price_is_unknown_not_guessed_when_ambiguous():
+    products = [make_product("0.1", unit="Hrs"), make_product("0.2", unit="Hrs")]
+
+    assert PriceProvider(FakePricing(products)).ec2_instance_hour("x", "r") is None
+
+
+def test_ec2_price_is_unknown_without_a_client():
+    assert PriceProvider().ec2_instance_hour("t3.micro", "ap-south-1") is None
+
+
+def test_ec2_price_is_unknown_on_aws_error_and_not_retried_per_instance():
+    error = ClientError(
+        {"Error": {"Code": "AccessDeniedException", "Message": "denied"}},
+        "GetProducts",
+    )
+    fake = FakePricing(error=error)
+    provider = PriceProvider(fake)
+
+    assert provider.ec2_instance_hour("t3.micro", "ap-south-1") is None
+    assert provider.ec2_instance_hour("t3.micro", "ap-south-1") is None
+    assert fake.calls == 1

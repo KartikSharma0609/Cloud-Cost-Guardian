@@ -16,7 +16,7 @@ def test_spend_report_labels_what_each_scanner_checks(capsys):
         [
             make_ce_page(
                 {
-                    "Amazon Elastic Compute Cloud - Compute": "8.07",
+                    "Amazon Simple Queue Service": "8.07",
                     "Amazon Virtual Private Cloud": "3.59",
                     "AWS Secrets Manager": "0.00003",
                 }

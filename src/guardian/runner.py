@@ -23,7 +23,11 @@ def scan_all(session, region: str, prices=None) -> ScanResult:
     for name, spec in list(SCANNERS.items()):
         try:
             client = session.client(spec.service, region_name=region)
-            result.findings.extend(spec.func(client, region, prices))
+            extra_clients = {
+                service: session.client(service, region_name=region)
+                for service in spec.extra_services
+            }
+            result.findings.extend(spec.func(client, region, prices, **extra_clients))
         except Exception as exc:  # noqa: BLE001
             # Deliberately broad: any scanner may fail in any way (permissions,
             # throttling, bugs). We record it in the report and keep scanning.
